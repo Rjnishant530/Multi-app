@@ -1,0 +1,786 @@
+:root {
+  color-scheme: light dark;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  background: var(--bg, #1e1e1e);
+  color: var(--fg, #eaeaea);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.top-tabs {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 12px;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  width: 100%;
+}
+
+.top-tabs-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  flex-shrink: 0;
+  padding-right: 4px;
+  margin-right: 4px;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.nav-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: inherit;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  opacity: 0.85;
+}
+
+.nav-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  opacity: 1;
+}
+
+.nav-btn:active:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.nav-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.layout {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.sidebar {
+  width: 220px;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 12px;
+  /* Flex column so header / tree / add-form stack with the tree as
+     the only element that scrolls when there are many instances —
+     the header and the bottom add-form stay anchored. */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.02);
+  transition: width 140ms ease, padding 140ms ease;
+}
+
+.layout.sidebar-collapsed .sidebar {
+  width: 52px;
+  padding: 8px 6px;
+  overflow: hidden;
+}
+
+.sidebar-mini {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+}
+
+.sidebar-mini-tree {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* Basis 0 + grow 1 makes the tree take exactly the remaining
+     vertical space, no more — so overflow-y can correctly compute
+     scrollable content. With basis: auto the tree would grow with
+     content and the scroll only kicked in once the WHOLE sidebar
+     hit the window edge. */
+  flex: 1 1 0;
+  min-height: 0;
+  scrollbar-width: thin;
+}
+
+.sidebar-mini-tree::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-mini-tree::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 2px;
+}
+
+.sidebar-mini-row {
+  background: transparent;
+  border: 1px solid transparent;
+  color: inherit;
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0 auto;
+  opacity: 0.85;
+  position: relative;
+}
+
+.sidebar-mini-row:hover {
+  background: rgba(255, 255, 255, 0.08);
+  opacity: 1;
+}
+
+.sidebar-mini-row.active {
+  background: rgba(120, 165, 255, 0.22);
+  border-color: rgba(120, 165, 255, 0.45);
+  color: #d6e4ff;
+  opacity: 1;
+}
+
+.sidebar-mini-row.active::before {
+  content: "";
+  position: absolute;
+  left: -7px;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 2px;
+  background: #78a5ff;
+}
+
+.sidebar-mini-add {
+  /* margin-top: auto pushes this button to the bottom of the rail,
+     no matter how few/many instance icons are above it. */
+  margin-top: auto;
+  margin-bottom: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px dashed rgba(255, 255, 255, 0.22);
+  color: inherit;
+  font-size: 18px;
+  line-height: 1;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.sidebar-mini-add:hover:not(:disabled) {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.12);
+  border-style: solid;
+}
+
+.sidebar-mini-add:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.sidebar-toggle {
+  background: transparent;
+  border: 1px solid transparent;
+  color: inherit;
+  font-size: 14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle:hover {
+  background: rgba(255, 255, 255, 0.08);
+  opacity: 1;
+}
+
+.sidebar-empty {
+  font-size: 12px;
+  opacity: 0.6;
+  line-height: 1.5;
+}
+
+.viewport {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.viewport-placeholder {
+  font-size: 13px;
+  opacity: 0.45;
+}
+
+/* Top tabs */
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1 1 0;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.top-tabs-actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: inherit;
+  font-size: 12px;
+  padding: 0 4px 0 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+  height: 24px;
+}
+
+.tab:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.tab.active {
+  background: rgba(120, 165, 255, 0.22);
+  border-color: rgba(120, 165, 255, 0.45);
+  box-shadow: 0 0 0 1px rgba(120, 165, 255, 0.25) inset;
+}
+
+.tab.active .tab-label {
+  color: #d6e4ff;
+  font-weight: 600;
+}
+
+.tab-label {
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tab-label-text {
+  /* Don't push the close button off when the title is long. */
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tab-close {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 16px;
+  line-height: 1;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 80ms ease;
+  padding: 0;
+}
+
+.tab:hover .tab-close,
+.tab.active .tab-close {
+  opacity: 0.6;
+}
+
+.tab-close:hover {
+  opacity: 1 !important;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.tab-add {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: inherit;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  padding: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0.85;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab-add:hover {
+  background: rgba(255, 255, 255, 0.14);
+  opacity: 1;
+}
+
+.tab-add-form input {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  outline: none;
+  min-width: 140px;
+}
+
+/* Sidebar */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.sidebar-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sidebar-title {
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.85;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-subtitle {
+  font-size: 10px;
+  opacity: 0.5;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sidebar-tree {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+}
+
+.sidebar-tree::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-tree::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 2px;
+}
+
+.sidebar-node {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 0;
+  border-radius: 6px;
+  position: relative;
+}
+
+.sidebar-row.active {
+  background: rgba(120, 165, 255, 0.18);
+  box-shadow: 0 0 0 1px rgba(120, 165, 255, 0.32) inset;
+}
+
+.sidebar-row.active::before {
+  content: "";
+  position: absolute;
+  left: -8px;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  border-radius: 2px;
+  background: #78a5ff;
+}
+
+.sidebar-row.active .sidebar-label {
+  color: #d6e4ff;
+  font-weight: 600;
+}
+
+.sidebar-icon-wrap,
+.sidebar-add-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.sidebar-icon,
+.sidebar-add-icon-button {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid transparent;
+  color: inherit;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  opacity: 0.9;
+}
+
+.sidebar-icon:hover,
+.sidebar-add-icon-button:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.2);
+  opacity: 1;
+}
+
+.instance-icon-empty {
+  opacity: 0.4;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.instance-icon-lucide {
+  display: block;
+}
+
+.instance-icon-text {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.sidebar-add-form-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.sidebar-add-name-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Icon picker popover.
+   Sized to fit inside the 220px sidebar (5 cols × 30px + gaps + padding
+   ≈ 180px) so it does NOT overflow into the viewport region, where the
+   native webview surface sits above all React layers and would clip
+   any popover content. Auto-flips upward when there's no room below. */
+.icon-picker {
+  position: absolute;
+  left: 0;
+  z-index: 200;
+  background: #2a2a2a;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45);
+  padding: 8px;
+  width: 184px;
+  max-width: calc(100vw - 16px);
+}
+
+.icon-picker-bottom {
+  top: calc(100% + 6px);
+}
+
+.icon-picker-top {
+  bottom: calc(100% + 6px);
+}
+
+.icon-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+}
+
+.icon-picker-cell {
+  background: transparent;
+  border: 1px solid transparent;
+  color: inherit;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  opacity: 0.75;
+}
+
+.icon-picker-cell:hover {
+  background: rgba(255, 255, 255, 0.12);
+  opacity: 1;
+}
+
+.icon-picker-cell.selected {
+  background: rgba(120, 165, 255, 0.25);
+  border-color: rgba(120, 165, 255, 0.6);
+  color: #d6e4ff;
+  opacity: 1;
+}
+
+.icon-picker-clear {
+  margin-top: 8px;
+  width: 100%;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: inherit;
+  font: inherit;
+  font-size: 11px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0.85;
+}
+
+.icon-picker-clear:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  opacity: 1;
+}
+
+.icon-picker-clear:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.caret {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0 4px;
+  font-size: 10px;
+  opacity: 0.6;
+  width: 16px;
+}
+
+.caret-spacer {
+  display: inline-block;
+  width: 16px;
+}
+
+.sidebar-label {
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-label:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sidebar-row-close {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 14px;
+  line-height: 1;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 80ms ease;
+  padding: 0;
+  margin-left: 2px;
+}
+
+.sidebar-row:hover .sidebar-row-close {
+  opacity: 0.55;
+}
+
+.sidebar-row-close:hover {
+  opacity: 1 !important;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.sidebar-row input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  outline: none;
+}
+
+.sidebar-add-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.sidebar-add-form input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  outline: none;
+}
+
+.sidebar-add-form button {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.sidebar-add-form button:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* Loading */
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  font-size: 13px;
+  pointer-events: none;
+}
+
+/* Confirm modal */
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: confirm-fade 100ms ease-out;
+}
+
+@keyframes confirm-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.confirm-modal {
+  background: #232323;
+  color: #eaeaea;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  padding: 20px 22px 16px;
+  max-width: 400px;
+  width: calc(100vw - 80px);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.confirm-message {
+  margin-bottom: 18px;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.confirm-actions button {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.confirm-actions button:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.confirm-actions .confirm-destructive {
+  background: rgba(220, 70, 70, 0.85);
+  border-color: rgba(220, 70, 70, 0.95);
+  color: white;
+}
+
+.confirm-actions .confirm-destructive:hover {
+  background: rgba(220, 70, 70, 1);
+}
