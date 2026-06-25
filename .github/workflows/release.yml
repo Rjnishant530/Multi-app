@@ -37,9 +37,10 @@ jobs:
             patchelf
 
       - name: Set up pnpm
+        # Version is read from the `packageManager` field in package.json
+        # (pnpm@11.8.0). Do not also pin it here — action-setup errors on a
+        # mismatch (ERR_PNPM_BAD_PM_VERSION).
         uses: pnpm/action-setup@v4
-        with:
-          version: 11
 
       - name: Set up Node
         uses: actions/setup-node@v4
