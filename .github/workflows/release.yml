@@ -118,16 +118,16 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Optional macOS signing secrets — add these in repo settings
-          # to ship a notarized build; otherwise the .app is unsigned
-          # and macOS users will see "developer cannot be verified"
-          # on first launch.
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # macOS code signing is intentionally NOT configured here. If the
+          # APPLE_* secrets are empty (none set), tauri-action still runs
+          # `security import` on an empty certificate and the build fails with
+          # "SecKeychainItemImport: One or more parameters ... were not valid".
+          # Omitting the vars makes it skip signing and produce an unsigned
+          # .app/.dmg (users right-click > Open on first launch). To ship a
+          # signed + notarized build, add the Apple signing secrets in repo
+          # settings and restore these env vars (see tauri-action docs):
+          #   APPLE_CERTIFICATE, APPLE_CERTIFICATE_PASSWORD,
+          #   APPLE_SIGNING_IDENTITY, APPLE_ID, APPLE_PASSWORD, APPLE_TEAM_ID
         with:
           # Upload into the pre-created release by id — no per-job create.
           releaseId: ${{ needs.create-release.outputs.release_id }}
