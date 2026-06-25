@@ -5,6 +5,12 @@ on:
     tags: ["v*"]
   workflow_dispatch:
 
+# tauri-action creates/updates a GitHub Release and uploads the bundles,
+# which needs write access to repo contents. Without this the default
+# read-only GITHUB_TOKEN fails with "Resource not accessible by integration".
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy:
