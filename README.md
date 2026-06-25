@@ -110,6 +110,6 @@ docs/
   navigations are rare in practice.
 - **macOS < 14**: blocked at build time. There is no fallback for older
   macOS — per-webview WKWebsiteDataStore identifiers don't exist.
-- **Icons** are placeholder solid-color blocks generated via `sips` and
-  `iconutil`. Replace `src-tauri/icons/*` with real brand assets before
-  shipping.
+
+
+[Icon] <a href="https://www.flaticon.com/free-icons/planet" title="planet icons">Flaticon</a>
