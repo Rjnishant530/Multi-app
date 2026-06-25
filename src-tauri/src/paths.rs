@@ -33,3 +33,11 @@ pub fn webview_data_dir(app: &AppHandle, instance_id: &uuid::Uuid) -> Result<Pat
     })?;
     Ok(dir)
 }
+
+/// The path to a per-instance webview data dir WITHOUT creating it — unlike
+/// [`webview_data_dir`], which is for spawn time. Cleanup must use this: the
+/// creating variant would immediately resurrect the very dir we're deleting.
+#[cfg(not(target_os = "macos"))]
+pub fn webview_data_dir_path(app: &AppHandle, instance_id: &uuid::Uuid) -> Result<PathBuf> {
+    Ok(app_data_dir(app)?.join("webviews").join(instance_id.to_string()))
+}

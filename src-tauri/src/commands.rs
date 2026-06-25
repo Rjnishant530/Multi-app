@@ -448,8 +448,17 @@ pub fn list_instance_tree(
     project_tree(&state, website_id)
 }
 
+// NOTE: This command (and the other webview-spawning commands below) MUST be
+// `async`. On Windows, synchronous commands execute inline on the UI thread
+// inside WebView2's web-message-received (IPC) event handler. Creating a child
+// webview there runs Wry's nested message pump (`wait_with_pump`) re-entrantly
+// inside that handler, which WebView2 forbids — the call deadlocks (the env is
+// created on disk but the completion callback can never be delivered). Making
+// the command `async` runs its body on the async runtime, off the IPC handler,
+// so the nested pump executes in the clean main-thread event loop. macOS has no
+// nested pump, so the sync version happened to work there.
 #[tauri::command]
-pub fn add_instance(
+pub async fn add_instance(
     ctx: State<'_, AppContext>,
     app: AppHandle<Wry>,
     website_id: Uuid,
@@ -534,8 +543,9 @@ pub fn remove_instance(
     Ok(removed)
 }
 
+// async: see the note on `add_instance` — this spawns a webview on Windows.
 #[tauri::command]
-pub fn activate_website(
+pub async fn activate_website(
     ctx: State<'_, AppContext>,
     app: AppHandle<Wry>,
     id: Uuid,
@@ -575,8 +585,9 @@ pub fn activate_website(
     Ok(())
 }
 
+// async: see the note on `add_instance` — this spawns a webview on Windows.
 #[tauri::command]
-pub fn activate_instance(
+pub async fn activate_instance(
     ctx: State<'_, AppContext>,
     app: AppHandle<Wry>,
     id: Uuid,
@@ -687,12 +698,62 @@ fn cleanup_data_dirs(_app: &AppHandle<Wry>, _instance_ids: &[Uuid]) {
     // data store is keyed by instance UUID, which never gets reused.
     #[cfg(not(target_os = "macos"))]
     for id in _instance_ids {
-        if let Ok(dir) = crate::paths::webview_data_dir(_app, id) {
-            if dir.exists() {
-                let _ = std::fs::remove_dir_all(&dir);
-            }
+        if let Ok(dir) = crate::paths::webview_data_dir_path(_app, id) {
+            schedule_dir_removal(dir);
         }
     }
+}
+
+/// Remove a per-instance webview data dir off-thread, retrying with backoff.
+///
+/// `Webview::close()` is asynchronous, and on Windows the WebView2 browser
+/// process for the closed instance keeps file handles open on its user-data
+/// folder for a short window after close. An immediate `remove_dir_all` then
+/// fails with a sharing violation, which is why a naive best-effort delete
+/// used to leave `webviews/<uuid>/` orphans behind. Retrying until the
+/// process exits (or a cap is hit) makes deletion reliable. Runs on its own
+/// thread so the blocking sleeps never touch the UI thread or async runtime.
+#[cfg(not(target_os = "macos"))]
+fn schedule_dir_removal(dir: std::path::PathBuf) {
+    if !dir.exists() {
+        return;
+    }
+    std::thread::spawn(move || {
+        remove_dir_with_retries(&dir);
+    });
+}
+
+#[cfg(not(target_os = "macos"))]
+fn remove_dir_with_retries(dir: &std::path::Path) -> bool {
+    // Cumulative wait of ~3.85s across attempts — comfortably longer than the
+    // WebView2 browser process takes to exit and release its handles.
+    const DELAYS_MS: [u64; 7] = [0, 100, 250, 500, 1000, 1000, 1000];
+    for (attempt, delay) in DELAYS_MS.iter().enumerate() {
+        if *delay > 0 {
+            std::thread::sleep(std::time::Duration::from_millis(*delay));
+        }
+        if !dir.exists() {
+            return true;
+        }
+        match std::fs::remove_dir_all(dir) {
+            Ok(()) => return true,
+            Err(err) => tracing::debug!(
+                attempt,
+                dir = %dir.display(),
+                error = %err,
+                "webview data dir removal failed; retrying"
+            ),
+        }
+    }
+    let still_present = dir.exists();
+    if still_present {
+        tracing::warn!(
+            dir = %dir.display(),
+            "gave up removing webview data dir after retries (harmless orphan; \
+             UUID is never reused so isolation is unaffected)"
+        );
+    }
+    !still_present
 }
 
 #[cfg(test)]
@@ -928,5 +989,58 @@ mod tests {
         let mut state = empty_state();
         let err = state_ops::set_active_instance(&mut state, Uuid::nil()).unwrap_err();
         assert!(matches!(err, OpError::InstanceNotFound(_)));
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    fn unique_temp_dir() -> std::path::PathBuf {
+        std::env::temp_dir().join(format!("multiapp-test-{}", Uuid::new_v4()))
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    #[test]
+    fn remove_dir_with_retries_deletes_a_populated_dir() {
+        let dir = unique_temp_dir();
+        std::fs::create_dir_all(dir.join("EBWebView/Default")).unwrap();
+        std::fs::write(dir.join("EBWebView/Local State"), b"{}").unwrap();
+        assert!(dir.exists());
+
+        assert!(remove_dir_with_retries(&dir));
+        assert!(!dir.exists());
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    #[test]
+    fn remove_dir_with_retries_is_ok_when_already_gone() {
+        let dir = unique_temp_dir();
+        assert!(!dir.exists());
+        // Should report success immediately without erroring.
+        assert!(remove_dir_with_retries(&dir));
+    }
+
+    // On Windows an open file handle blocks deletion (no FILE_SHARE_DELETE),
+    // which is exactly the WebView2-process-still-holding-the-folder race.
+    // Verify the retry loop waits out the lock and then succeeds. On Linux an
+    // open handle does NOT block unlink, so this race only exists on Windows.
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn remove_dir_with_retries_waits_out_a_file_lock() {
+        use std::io::Write;
+
+        let dir = unique_temp_dir();
+        std::fs::create_dir_all(&dir).unwrap();
+        let mut locked = std::fs::File::create(dir.join("locked.bin")).unwrap();
+        locked.write_all(b"hold").unwrap();
+
+        // Release the handle partway through the retry budget.
+        let releaser = std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_millis(400));
+            drop(locked);
+        });
+
+        let removed = remove_dir_with_retries(&dir);
+        releaser.join().unwrap();
+
+        assert!(removed, "retry loop should remove the dir after the lock releases");
+        assert!(!dir.exists());
     }
 }
