@@ -45,7 +45,10 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # pnpm 11.8.0 (from package.json packageManager) requires Node
+          # >=22.13 — it imports the built-in node:sqlite module. Node 20
+          # fails with ERR_UNKNOWN_BUILTIN_MODULE before install runs.
+          node-version: 22
           cache: pnpm
 
       - name: Set up Rust
